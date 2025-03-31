@@ -1,0 +1,10 @@
+GET http://localhost:2000/api/persons
+
+###
+POST http://localhost:2000/api/persons
+Content-Type: application/json
+
+{
+  "name": "Billy Jeans",
+  "number": "123-23468776"
+}
