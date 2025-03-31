@@ -95,6 +95,11 @@ app.post('/api/persons', (request, response) => {
 app.delete('/api/persons/:id', (request, response) => {
 
   const id = request.params.id
+
+  if(!persons.some(p => p.id === id)){
+    return response.status(404).send('id not in server').end()
+  }
+
   persons = persons.filter(p => p.id !== id)
   
   response.status(204).end()
