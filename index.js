@@ -1,14 +1,16 @@
+require('dotenv').config()
 const express = require('express')
-const cors = require('cors')
 const morgan = require('morgan')
+const Person = require('./models/person')
 const app = express()
 
 app.use(express.static('dist'))
 app.use(express.json())
-app.use(cors())
+
 
 morgan.token('req-body', (request) => JSON.stringify(request.body))
 app.use(morgan(":method :url :status - :response-time ms - Body: :req-body"))
+
 
 
 
@@ -58,36 +60,50 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({})
+    .then(data => {
+      response.json(data)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
   const id = request.params.id
 
-  const person = persons.find(p => p.id === id)
+  Person.findById(id)
+    .then(person => {
+      if (!person){
+        return response.status(404).send('not found').end()
+      }
+      response.json(person)    
+    })
+    .catch(error => {
+      console.log(error)
+      response.status(500).end()
+    })
 
-  if (!person){
-    return response.status(404).send('not found').end()
-  }
-
-  response.json(person)
   
 })
 
 app.post('/api/persons', (request, response) => {
-  let person = request.body
+  let body = request.body
 
   
 
-  if(!person.name || !person.number){
+  if(!body.name || !body.number){
     return response.status(400).json({
       error: 'missing name and/or number'
     }).end()
   }
 
-  person = {...person, id: generateId()}
-  persons = [...persons, person]
-  response.json(person)
+  const person = new Person({
+    name: body.name,
+    number: body.number
+  })
+  // persons = [...persons, person]
+  person.save()
+    .then(savedPerson => {
+      response.json(savedPerson)
+    })
 
   
 })
@@ -96,16 +112,18 @@ app.delete('/api/persons/:id', (request, response) => {
 
   const id = request.params.id
 
-  if(!persons.some(p => p.id === id)){
-    return response.status(404).send('id not in server').end()
-  }
-
-  persons = persons.filter(p => p.id !== id)
+  Person.findByIdAndDelete(id)
+    .then(_ => {
+      response.status(204).end()
+    })
+    .catch(error => {
+      console.log('Error:', error.message)
+    })
   
-  response.status(204).end()
+  
 })
 
-const PORT = process.env.PORT || 2000
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`server is alive on ${PORT}`);
   
